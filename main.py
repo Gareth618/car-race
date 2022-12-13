@@ -1,7 +1,6 @@
 import gym
 import sys
 import itertools
-import numpy as np
 from queue import Queue
 from agent import Agent
 
@@ -48,7 +47,7 @@ if mode == 'test':
         should_break |= step_game_over
         frames.get()
         frames.put(observation)
-        return np.array(frames.queue), step_reward, step_game_over
+        return frames.queue, step_reward, step_game_over
 
     frames = Queue(3)
     observation, _ = env.reset()
@@ -57,7 +56,7 @@ if mode == 'test':
     frames.put(observation)
     agent.reset()
     while not should_break:
-        agent.step(np.array(list(frames.queue)), take_action)
+        agent.step(frames.queue, take_action)
     exit(0)
 
 for episode in range(episodes):
@@ -78,7 +77,7 @@ for episode in range(episodes):
         should_break |= step_game_over
         frames.get()
         frames.put(observation)
-        return np.array(list(frames.queue)), step_reward, step_game_over
+        return frames.queue, step_reward, step_game_over
 
     frames = Queue(3)
     observation, _ = env.reset()
@@ -88,7 +87,7 @@ for episode in range(episodes):
     agent.reset()
     step = 0
     while not should_break:
-        agent.step(np.array(list(frames.queue)), take_action)
+        agent.step(frames.queue, take_action)
         step += 1
         if step < 100:
             negative_rewards = 0
