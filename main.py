@@ -28,7 +28,7 @@ steering = [-1, 0, 1]
 gas = [0, 1]
 breaking = [0, .2]
 agent = Agent(
-    list(itertools.product(steering, gas, breaking)), 1000,
+    list(itertools.product(steering, gas, breaking)), 1000, 50,
     alpha=.1, gamma=.95, epsilon=1, epsilon_lower=.1, epsilon_decay=.999
 )
 if mode in ['continue', 'test']:
@@ -90,9 +90,10 @@ for episode in range(episodes):
     while not should_break:
         agent.step(np.array(list(frames.queue)), take_action)
         step += 1
-        if step < 300:
+        if step < 100:
             negative_rewards = 0
         should_break |= negative_rewards == 10
     agent.replay()
-    agent.model.save_weights('model')
+    if episode % 5 == 0:
+        agent.model.save_weights('model')
     print(f'episode {episode + 1}/{episodes}: reward {episode_reward}')

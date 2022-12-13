@@ -6,7 +6,7 @@ from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 from keras.optimizers import Adam
 
 class Agent:
-    def __init__(self, action_space, memory_size, **hyper):
+    def __init__(self, action_space, memory_size, batch_size, **hyper):
         self.alpha = hyper['alpha']
         self.gamma = hyper['gamma']
         self.epsilon = hyper['epsilon']
@@ -14,6 +14,7 @@ class Agent:
         self.epsilon_decay = hyper['epsilon_decay']
         self.action_space = action_space
         self.memory_size = memory_size
+        self.batch_size = batch_size
         self.model = self.create_model()
 
     def create_model(self):
@@ -46,8 +47,7 @@ class Agent:
         self.memory.put((state, action_index, next_state, reward, game_over))
 
     def replay(self):
-        batch = list(self.memory.queue)
-        random.shuffle(batch)
+        batch = random.sample(list(self.memory.queue), self.batch_size)
         training_inputs = []
         training_outputs = []
         for state, action_index, next_state, reward, game_over in batch:
