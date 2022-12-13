@@ -1,4 +1,3 @@
-import math
 import random
 import numpy as np
 from queue import Queue
@@ -14,15 +13,15 @@ class Agent:
         self.epsilon_lower = hyper['epsilon_lower']
         self.epsilon_decay = hyper['epsilon_decay']
         self.action_space = action_space
+        self.memory_size = memory_size
         self.model = self.create_model()
-        self.memory = Queue(maxsize=memory_size)
 
     def create_model(self):
         model = Sequential()
-        model.add(Conv2D(6, (7, 7), 3, input_shape=(96, 96, 1), activation='relu'))
-        model.add(MaxPooling2D((2, 2)))
-        model.add(Conv2D(12, (4, 4), activation='relu'))
-        model.add(MaxPooling2D((2, 2)))
+        model.add(Conv2D(filters=6, kernel_size=(7, 7), strides=3, activation='relu', input_shape=(3, 96, 96, 3)))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
+        # model.add(Conv2D(filters=12, kernel_size=(4, 4), activation='relu'))
+        # model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
         model.add(Dense(216, activation='relu'))
         model.add(Dense(len(self.action_space)))
@@ -30,11 +29,14 @@ class Agent:
         return model
 
     def model_predict(self, state):
-        return self.model.predict(np.expand_dims(state, axis=0), verbose=False)[0]
+        return self.model.predict(np.expand_dims(state, axis=0), verbose=0)[0]
+
+    def reset(self):
+        self.memory = Queue(self.memory_size)
 
     def step(self, state, take_action):
         if random.random() < self.epsilon:
-            action_index = random.randint(0, len(self.action_space) - 1)
+            action_index = random.randrange(len(self.action_space))
         else:
             q_values = self.model_predict(state)
             action_index = np.argmax(q_values)
@@ -57,6 +59,6 @@ class Agent:
                 target[action_index] = reward + self.gamma * np.amax(q_values)
             training_inputs += [state]
             training_outputs += [target]
-        self.model.fit(np.array(training_inputs), np.array(training_outputs), verbose=False)
+        self.model.fit(np.array(training_inputs), np.array(training_outputs), verbose=0)
         if self.epsilon > self.epsilon_lower:
             self.epsilon *= self.epsilon_decay

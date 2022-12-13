@@ -1,6 +1,8 @@
 import gym
 import sys
 import itertools
+import numpy as np
+from queue import Queue
 from agent import Agent
 
 def is_int(string):
@@ -36,7 +38,7 @@ if mode == 'test':
     should_break = False
 
     def take_action(action):
-        global observation, should_break
+        global frames, should_break
         step_reward = 0
         step_game_over = False
         for _ in range(3):
@@ -44,11 +46,18 @@ if mode == 'test':
             step_reward += reward
             step_game_over |= game_over
         should_break |= step_game_over
-        return observation, step_reward, step_game_over
+        frames.get()
+        frames.put(observation)
+        return np.array(frames.queue), step_reward, step_game_over
 
+    frames = Queue(3)
     observation, _ = env.reset()
+    frames.put(observation)
+    frames.put(observation)
+    frames.put(observation)
+    agent.reset()
     while not should_break:
-        agent.step(observation, take_action)
+        agent.step(np.array(list(frames.queue)), take_action)
     exit(0)
 
 for episode in range(episodes):
@@ -57,7 +66,7 @@ for episode in range(episodes):
     should_break = False
 
     def take_action(action):
-        global observation, episode_reward, negative_rewards, should_break
+        global frames, episode_reward, negative_rewards, should_break
         step_reward = 0
         step_game_over = False
         for _ in range(3):
@@ -67,15 +76,23 @@ for episode in range(episodes):
         episode_reward += step_reward
         negative_rewards = negative_rewards + 1 if step_reward < 0 else 0
         should_break |= step_game_over
-        return observation, step_reward, step_game_over
+        frames.get()
+        frames.put(observation)
+        return np.array(list(frames.queue)), step_reward, step_game_over
 
+    frames = Queue(3)
     observation, _ = env.reset()
+    frames.put(observation)
+    frames.put(observation)
+    frames.put(observation)
+    agent.reset()
     step = 0
     while not should_break:
-        agent.step(observation, take_action)
+        agent.step(np.array(list(frames.queue)), take_action)
         step += 1
         if step < 300:
             negative_rewards = 0
         should_break |= negative_rewards == 10
+    agent.replay()
     agent.model.save_weights('model')
-    print('finished episode', episode + 1, 'of', episodes, 'with reward', episode_reward)
+    print(f'episode {episode + 1}/{episodes}: reward {episode_reward}')
