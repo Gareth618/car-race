@@ -20,10 +20,10 @@ class Agent:
 
     def create_model(self):
         model = Sequential()
-        model.add(Conv2D(filters=6, kernel_size=(7, 7), strides=3, activation='relu', input_shape=(96, 96, 3)))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Conv2D(filters=12, kernel_size=(4, 4), activation='relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Conv2D(filters=6, kernel_size=7, strides=3, activation='relu', input_shape=(96, 96, 3)))
+        model.add(MaxPooling2D(pool_size=2))
+        model.add(Conv2D(filters=12, kernel_size=4, activation='relu'))
+        model.add(MaxPooling2D(pool_size=2))
         model.add(Flatten())
         model.add(Dense(216, activation='relu'))
         model.add(Dense(len(self.action_space)))
@@ -34,7 +34,7 @@ class Agent:
         real_state = []
         for frame in state:
             image = Image.fromarray(frame).convert('L')
-            real_state += [np.array(image)]
+            real_state += [np.array(image) / 255]
         return np.expand_dims(np.array(real_state).transpose(1, 2, 0), 0)
 
     def model_predict(self, state):
@@ -67,6 +67,6 @@ class Agent:
                 target[action_index] = reward + self.gamma * np.max(q_values)
             training_inputs += [self.process_state(state)[0]]
             training_outputs += [target]
-        self.model.fit(np.array(training_inputs), np.array(training_outputs), verbose=0)
+        self.model.fit(np.array(training_inputs), np.array(training_outputs), use_multiprocessing=True, verbose=0)
         if self.epsilon > self.epsilon_lower:
             self.epsilon *= self.epsilon_decay
