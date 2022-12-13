@@ -19,7 +19,7 @@ class Agent:
 
     def create_model(self):
         model = Sequential()
-        model.add(Conv2D(6, (7, 7), 3, input_shape=(100, 100, 1), activation='relu'))
+        model.add(Conv2D(6, (7, 7), 3, input_shape=(96, 96, 1), activation='relu'))
         model.add(MaxPooling2D((2, 2)))
         model.add(Conv2D(12, (4, 4), activation='relu'))
         model.add(MaxPooling2D((2, 2)))
@@ -44,8 +44,8 @@ class Agent:
         self.memory.put((state, action_index, next_state, reward, game_over))
 
     def replay(self):
-        sample_space = list(self.memory.queue)
-        batch = random.sample(sample_space, int(math.sqrt(len(sample_space))))
+        batch = list(self.memory.queue)
+        random.shuffle(batch)
         training_inputs = []
         training_outputs = []
         for state, action_index, next_state, reward, game_over in batch:
@@ -59,4 +59,4 @@ class Agent:
             training_outputs += [target]
         self.model.fit(np.array(training_inputs), np.array(training_outputs), verbose=False)
         if self.epsilon > self.epsilon_lower:
-            self.epsilon -= self.epsilon_decay
+            self.epsilon *= self.epsilon_decay
