@@ -1,6 +1,5 @@
 import random
 import numpy as np
-from PIL import Image
 from queue import Queue
 from keras.models import Sequential
 from keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
@@ -30,15 +29,8 @@ class Agent:
         model.compile(loss='mean_squared_error', optimizer=Adam(learning_rate=self.alpha))
         return model
 
-    def process_state(self, state):
-        real_state = []
-        for frame in state:
-            image = Image.fromarray(frame).convert('L')
-            real_state += [np.array(image) / 255]
-        return np.expand_dims(np.array(real_state).transpose(1, 2, 0), 0)
-
     def model_predict(self, state):
-        return self.model.predict(self.process_state(state), verbose=0)[0]
+        return self.model.predict(state, verbose=0)[0]
 
     def reset(self):
         self.memory = Queue(self.memory_size)
@@ -65,7 +57,7 @@ class Agent:
             else:
                 q_values = self.model_predict(next_state)
                 target[action_index] = reward + self.gamma * np.max(q_values)
-            training_inputs += [self.process_state(state)[0]]
+            training_inputs += [state[0]]
             training_outputs += [target]
         self.model.fit(np.array(training_inputs), np.array(training_outputs), use_multiprocessing=True, verbose=0)
         if self.epsilon > self.epsilon_lower:
