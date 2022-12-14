@@ -27,10 +27,8 @@ class Agent:
         model.add(Dense(216, activation='relu'))
         model.add(Dense(len(self.action_space)))
         model.compile(loss='mean_squared_error', optimizer=Adam(learning_rate=self.alpha))
+        model.summary()
         return model
-
-    def model_predict(self, state):
-        return self.model.predict(state, verbose=0)[0]
 
     def reset(self):
         self.memory = Queue(self.memory_size)
@@ -39,7 +37,7 @@ class Agent:
         if random.random() < self.epsilon:
             action_index = random.randrange(len(self.action_space))
         else:
-            q_values = self.model_predict(state)
+            q_values = self.model.predict(np.array([state]), verbose=0)[0]
             action_index = np.argmax(q_values)
         next_state, reward, game_over = take_action(self.action_space[action_index])
         if len(self.memory.queue) == self.memory.maxsize:
@@ -51,13 +49,13 @@ class Agent:
         training_inputs = []
         training_outputs = []
         for state, action_index, next_state, reward, game_over in batch:
-            target = self.model_predict(state)
+            target = self.model.predict(np.array([state]), verbose=0)[0]
             if game_over:
                 target[action_index] = reward
             else:
-                q_values = self.model_predict(next_state)
+                q_values = self.model.predict(np.array([next_state]), verbose=0)[0]
                 target[action_index] = reward + self.gamma * np.max(q_values)
-            training_inputs += [state[0]]
+            training_inputs += [state]
             training_outputs += [target]
         self.model.fit(np.array(training_inputs), np.array(training_outputs), use_multiprocessing=True, verbose=0)
         if self.epsilon > self.epsilon_lower:
