@@ -13,7 +13,7 @@ class Agent:
         self.epsilon_lower = hyper['epsilon_lower']
         self.epsilon_decay = hyper['epsilon_decay']
         self.action_space = action_space
-        self.memory_size = memory_size
+        self.memory = Queue(memory_size)
         self.batch_size = batch_size
         self.model = self.create_model()
         self.target_model = self.create_model()
@@ -29,11 +29,7 @@ class Agent:
         model.add(Dense(216, activation='relu'))
         model.add(Dense(len(self.action_space)))
         model.compile(loss='mean_squared_error', optimizer=Adam(learning_rate=self.alpha))
-        model.summary()
         return model
-
-    def reset(self):
-        self.memory = Queue(self.memory_size)
 
     def step(self, state, take_action):
         if random.random() < self.epsilon:
@@ -47,7 +43,9 @@ class Agent:
         self.memory.put((state, action_index, next_state, reward, game_over))
 
     def replay(self):
-        batch = random.sample(list(self.memory.queue), self.batch_size)
+        memory = list(self.memory.queue)
+        if self.batch_size > len(memory): return
+        batch = random.sample(memory, self.batch_size)
         training_inputs = []
         training_outputs = []
         for state, action_index, next_state, reward, game_over in batch:

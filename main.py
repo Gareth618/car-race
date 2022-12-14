@@ -66,7 +66,6 @@ if mode == 'test':
     frames.put(observation)
     frames.put(observation)
     frames.put(observation)
-    agent.reset()
     while not should_break:
         agent.step(process(frames.queue), take_action)
     exit(0)
@@ -99,7 +98,6 @@ for episode in range(1, episodes + 1):
     frames.put(observation)
     frames.put(observation)
     frames.put(observation)
-    agent.reset()
     step = 0
     while not should_break:
         agent.step(process(frames.queue), take_action)
