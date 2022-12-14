@@ -16,6 +16,8 @@ class Agent:
         self.memory_size = memory_size
         self.batch_size = batch_size
         self.model = self.create_model()
+        self.target_model = self.create_model()
+        self.calibrate()
 
     def create_model(self):
         model = Sequential()
@@ -53,10 +55,24 @@ class Agent:
             if game_over:
                 target[action_index] = reward
             else:
-                q_values = self.model.predict(np.array([next_state]), verbose=0)[0]
+                q_values = self.target_model.predict(np.array([next_state]), verbose=0)[0]
                 target[action_index] = reward + self.gamma * np.max(q_values)
             training_inputs += [state]
             training_outputs += [target]
         self.model.fit(np.array(training_inputs), np.array(training_outputs), use_multiprocessing=True, verbose=0)
         if self.epsilon > self.epsilon_lower:
             self.epsilon *= self.epsilon_decay
+
+    def calibrate(self):
+        self.target_model.set_weights(self.model.get_weights())
+
+    def load(self):
+        self.model.load_weights('model')
+        self.calibrate()
+        with open('epsilon', 'r') as file:
+            self.epsilon = float(file.read())
+
+    def save(self):
+        self.target_model.save_weights('model')
+        with open('epsilon', 'w') as file:
+            file.write(str(self.epsilon))

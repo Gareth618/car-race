@@ -41,11 +41,7 @@ agent = Agent(
     alpha=.001, gamma=.95, epsilon=1, epsilon_lower=.1, epsilon_decay=.9999
 )
 if mode in ['continue', 'test']:
-    agent.model.load_weights('model')
-
-if mode == 'continue':
-    with open('epsilon', 'r') as file:
-        agent.epsilon = float(file.read())
+    agent.load()
 
 if mode == 'test':
     should_break = False
@@ -76,7 +72,7 @@ if mode == 'test':
     exit(0)
 
 rewards = []
-for episode in range(episodes):
+for episode in range(1, episodes + 1):
     episode_reward = 0
     negative_rewards = 0
     should_break = False
@@ -111,13 +107,11 @@ for episode in range(episodes):
         negative_rewards = 0 if step < 100 else negative_rewards
         should_break |= negative_rewards == 25
     agent.replay()
-    if (episode + 1) % 5 == 0:
-        agent.model.save_weights('model')
-    print(f'episode {episode + 1}/{episodes}: reward {episode_reward}')
+    if episode % 5 == 0:
+        agent.calibrate()
+        agent.save()
     rewards += [episode_reward]
+    print(f'episode {episode}/{episodes}: reward {episode_reward}')
 
-with open('epsilon', 'w') as file:
-    file.write(str(agent.epsilon))
-
-# plt.plot(range(len(rewards)), rewards)
-# plt.show()
+plt.plot(range(len(rewards)), rewards)
+plt.show()
