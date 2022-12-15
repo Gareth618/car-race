@@ -1,9 +1,10 @@
+import cv2
 import gym
 import sys
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image
+# from PIL import Image
 from queue import Queue
 from agent import Agent
 
@@ -14,8 +15,9 @@ def is_int(string):
 def process(state):
     batch = []
     for frame in state:
-        image = Image.fromarray(frame).convert('L')
-        batch += [np.array(image) / 255]
+        # image = Image.fromarray(frame).convert('L')
+        # batch += [np.array(image) / 255]
+        batch += [cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float) / 255]
     return np.array(batch).transpose(1, 2, 0)
 
 args = sys.argv[1:]
@@ -30,9 +32,6 @@ else:
     print('wrong format')
     exit(1)
 
-env = gym.make('CarRacing-v2', render_mode=show)
-env.action_space.seed(42)
-
 steering = [-1, 0, 1]
 gas = [0, 1]
 breaking = [0, .2]
@@ -40,6 +39,8 @@ agent = Agent(
     list(itertools.product(steering, gas, breaking)), 5000, 64,
     alpha=.001, gamma=.95, epsilon=1, epsilon_lower=.1, epsilon_decay=.9999
 )
+
+env = gym.make('CarRacing-v2', render_mode=show)
 if mode in ['continue', 'test']:
     agent.load()
 
@@ -104,7 +105,8 @@ for episode in range(1, episodes + 1):
         step += 1
         negative_rewards = 0 if step < 100 else negative_rewards
         should_break |= negative_rewards == 25
-    agent.replay()
+        agent.replay()
+        print(f'episode {episode}/{episodes}: step {step}')
     if episode % 5 == 0:
         agent.calibrate()
         agent.save()

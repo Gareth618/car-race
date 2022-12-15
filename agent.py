@@ -67,10 +67,10 @@ class Agent:
     def load(self):
         self.model.load_weights('model')
         self.calibrate()
-        with open('epsilon', 'r') as file:
-            self.epsilon = float(file.read())
+        with open('epsilon', 'r') as fd:
+            self.epsilon = float(fd.read())
 
     def save(self):
         self.target_model.save_weights('model')
-        with open('epsilon', 'w') as file:
-            file.write(str(self.epsilon))
+        with open('epsilon', 'w') as fd:
+            fd.write(str(self.epsilon))
