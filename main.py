@@ -1,10 +1,9 @@
-import cv2
 import gym
 import sys
 import itertools
 import numpy as np
 import matplotlib.pyplot as plt
-# from PIL import Image
+from PIL import Image
 from queue import Queue
 from agent import Agent
 
@@ -15,9 +14,12 @@ def is_int(string):
 def process(state):
     batch = []
     for frame in state:
-        # image = Image.fromarray(frame).convert('L')
-        # batch += [np.array(image) / 255]
-        batch += [cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY).astype(float) / 255]
+        image = Image.fromarray(frame).convert('L')
+        matrix = np.array(image)
+        for x in range(85, 96):
+            for y in range(96):
+                matrix[x][y] = 0
+        batch += [matrix / 255]
     return np.array(batch).transpose(1, 2, 0)
 
 args = sys.argv[1:]
@@ -36,8 +38,8 @@ steering = [-1, 0, 1]
 gas = [0, 1]
 breaking = [0, .2]
 agent = Agent(
-    list(itertools.product(steering, gas, breaking)), 5000, 64,
-    alpha=.001, gamma=.95, epsilon=1, epsilon_lower=.1, epsilon_decay=.9999
+    list(itertools.product(steering, gas, breaking)), 500, 50,
+    alpha=.01, gamma=.95, epsilon=1, epsilon_lower=.1, epsilon_decay=.99
 )
 
 env = gym.make('CarRacing-v2', render_mode=show)
@@ -55,8 +57,6 @@ if mode == 'test':
             observation, reward, game_over, _, _ = env.step(action)
             step_reward += reward
             step_game_over |= game_over
-        if action[1] == 1 and action[2] == 0:
-            step_reward *= 1.5
         should_break |= step_game_over
         frames.get()
         frames.put(observation)
@@ -67,6 +67,8 @@ if mode == 'test':
     frames.put(observation)
     frames.put(observation)
     frames.put(observation)
+    for _ in range(20):
+        take_action((0, .5, 0))
     while not should_break:
         agent.step(process(frames.queue), take_action)
     exit(0)
@@ -85,8 +87,6 @@ for episode in range(1, episodes + 1):
             observation, reward, game_over, _, _ = env.step(action)
             step_reward += reward
             step_game_over |= game_over
-        if action[1] == 1 and action[2] == 0:
-            step_reward *= 1.5
         episode_reward += step_reward
         negative_rewards = negative_rewards + 1 if step_reward < 0 else 0
         should_break |= step_game_over
@@ -99,17 +99,18 @@ for episode in range(1, episodes + 1):
     frames.put(observation)
     frames.put(observation)
     frames.put(observation)
+    for _ in range(20):
+        take_action((0, .5, 0))
     step = 0
     while not should_break:
         agent.step(process(frames.queue), take_action)
         step += 1
-        negative_rewards = 0 if step < 100 else negative_rewards
-        should_break |= negative_rewards == 25
-        agent.replay()
-        print(f'episode {episode}/{episodes}: step {step}')
+        negative_rewards = 0 if step < 50 + episode else negative_rewards
+        should_break |= negative_rewards == 20
+    agent.replay()
     if episode % 5 == 0:
         agent.calibrate()
-        agent.save()
+    agent.save()
     rewards += [episode_reward]
     print(f'episode {episode}/{episodes}: reward {episode_reward}')
 
